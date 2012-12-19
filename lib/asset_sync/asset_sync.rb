@@ -21,9 +21,31 @@ module AssetSync
     end
 
     def sync
-      raise Config::Invalid.new(config.errors.full_messages.join(', ')) unless config && config.valid?
-      self.storage.sync
+      return unless AssetSync.enabled?
+
+      if config.fail_silently?
+        self.warn config.errors.full_messages.join(', ') unless config && config.valid?
+      else
+        raise Config::Invalid.new(config.errors.full_messages.join(', ')) unless config && config.valid?
+      end
+      self.storage.sync if config && config.valid?
     end
+
+    def warn(msg)
+      stderr.puts msg
+    end
+
+    def log(msg)
+      stdout.puts msg if ENV["RAILS_GROUPS"] == "assets"
+    end
+
+    def enabled?
+      config.enabled?
+    end
+
+    # easier to stub
+    def stderr ; STDERR ; end
+    def stdout ; STDOUT ; end
 
   end
 
